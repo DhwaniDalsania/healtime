@@ -386,7 +386,7 @@ app.get('/api/messages/:userId1/:userId2', async (req, res) => {
 });
 
 // Seed Data
-app.post('/api/seed', async (req, res) => {
+app.get('/api/seed', async (req, res) => {
     try {
         await User.deleteMany({});
         await Appointment.deleteMany({});
