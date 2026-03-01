@@ -1,0 +1,7 @@
+Analyzing healtime-app...                                       
+
+   info - The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\screens\admin_dashboard_screen.dart:2:8 - unnecessary_import
+   info - Statements in an if should be enclosed in a block - lib\screens\availability_screen.dart:80:27 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\availability_screen.dart:82:27 - curly_braces_in_flow_control_structures
+
+3 issues found. (ran in 3.5s)
