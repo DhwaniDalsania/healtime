@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://10.69.53.163:5000/api';
+  static const String baseUrl =
+      'https://healtime-production.up.railway.app/api';
 
   static Future<Map<String, dynamic>?> post(
     String endpoint,

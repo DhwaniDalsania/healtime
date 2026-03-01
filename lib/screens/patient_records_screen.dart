@@ -102,7 +102,7 @@ class _PatientRecordsScreenState extends State<PatientRecordsScreen> {
               ElevatedButton.icon(
                 onPressed: () async {
                   final url = Uri.parse(
-                    'http://10.69.53.163:5000${record.attachments.first}',
+                    'https://healtime-production.up.railway.app${record.attachments.first}',
                   );
                   try {
                     await launchUrl(url, mode: LaunchMode.externalApplication);
