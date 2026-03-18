@@ -49,7 +49,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
             title: const Text('Biometric Login'),
             secondary: const Icon(Symbols.fingerprint),
             value: _biometricEnabled,
-            activeColor: AppTheme.primary,
+            activeThumbColor: AppTheme.primary,
             onChanged: (val) {
               setState(() {
                 _biometricEnabled = val;
@@ -61,7 +61,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
             title: const Text('Two-Factor Authentication'),
             secondary: const Icon(Symbols.phonelink_lock),
             value: _twoFactorEnabled,
-            activeColor: AppTheme.primary,
+            activeThumbColor: AppTheme.primary,
             onChanged: (val) {
               setState(() {
                 _twoFactorEnabled = val;

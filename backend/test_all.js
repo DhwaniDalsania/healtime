@@ -1,9 +1,10 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('./models/User');
 const Message = require('./models/Message');
 
 async function testContacts() {
-    await mongoose.connect('mongodb://localhost:27017/healtime');
+    await mongoose.connect(process.env.MONGODB_URI);
 
     const anyMessage = await Message.findOne();
     if (!anyMessage) {
