@@ -14,9 +14,9 @@ void main() async {
     MultiProvider(
       providers: [ChangeNotifierProvider.value(value: authProvider)],
       child: HealTimeApp(router: appRouter.router),
-    ),
+    ), 
   );
-}
+} 
 
 class HealTimeApp extends StatelessWidget {
   final GoRouter router;

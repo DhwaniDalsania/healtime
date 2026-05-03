@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   static const String baseUrl =
-      'https://healtime-production.up.railway.app/api';
+      'https://healtime-jn9z.onrender.com/api';
 
   static Future<Map<String, dynamic>?> post(
     String endpoint,
