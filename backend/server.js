@@ -8,6 +8,7 @@ const Appointment = require('./models/Appointment');
 const Message = require('./models/Message');
 const Record = require('./models/Record');
 const multer = require('multer');
+const { migrateDatabase } = require('./utils/migration');
 const path = require('path');
 const fs = require('fs');
 
@@ -35,7 +36,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('Connected to MongoDB via Mongoose'))
+    .then(async () => {
+        console.log('Connected to MongoDB via Mongoose');
+        try {
+            await migrateDatabase();
+        } catch (migrationError) {
+            console.error('Database migration failed during startup:', migrationError);
+        }
+    })
     .catch(err => console.error('MongoDB connection error:', err));
 
 // --- Routes ---
@@ -44,8 +52,13 @@ mongoose.connect(process.env.MONGODB_URI)
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email, password });
+        const user = await User.findOne({ email });
         if (!user) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        const isMatch = await user.comparePassword(password);
+        if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
@@ -401,7 +414,12 @@ app.get('/api/seed', async (req, res) => {
             { name: "Dr. Michael Ross", email: "ross@example.com", password: 'password123', role: 'doctor', status: 'approved', specialty: "Neurologist", rating: 4.9, reviews: 89, availability: "Mon-Thu, 10AM-4PM", clinic: 'Neuro Institute', price: '$200' },
             { name: "Dr. Emma Watson", email: "watson@example.com", password: 'password123', role: 'doctor', status: 'approved', specialty: "Pediatrician", rating: 4.7, reviews: 156, availability: "Tue-Sat, 8AM-2PM", clinic: 'Kids Clinic', price: '$100' }
         ];
-        await User.insertMany(users);
+
+        // Loop and call save() to trigger the bcrypt pre-save hook
+        for (const u of users) {
+            const user = new User(u);
+            await user.save();
+        }
 
         res.json({ message: 'Data seeded successfully' });
     } catch (error) {

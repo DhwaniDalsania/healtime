@@ -6,13 +6,53 @@ class ApiService {
   static const String baseUrl =
       'https://healtime-jn9z.onrender.com/api';
 
+  static String _sanitizeData(dynamic data) {
+    if (data == null) return '';
+    try {
+      if (data is Map<String, dynamic>) {
+        final sanitized = Map<String, dynamic>.from(data);
+        if (sanitized.containsKey('password')) {
+          sanitized['password'] = '********';
+        }
+        if (sanitized.containsKey('content')) {
+          sanitized['content'] = '********';
+        }
+        return jsonEncode(sanitized);
+      } else if (data is String) {
+        if (data.isEmpty) return data;
+        try {
+          final decoded = jsonDecode(data);
+          return _sanitizeData(decoded);
+        } catch (_) {
+          return data;
+        }
+      } else if (data is List) {
+        final sanitizedList = data.map((item) {
+          if (item is Map<String, dynamic>) {
+            final sanitized = Map<String, dynamic>.from(item);
+            if (sanitized.containsKey('password')) {
+              sanitized['password'] = '********';
+            }
+            if (sanitized.containsKey('content')) {
+              sanitized['content'] = '********';
+            }
+            return sanitized;
+          }
+          return item;
+        }).toList();
+        return jsonEncode(sanitizedList);
+      }
+    } catch (_) {}
+    return data.toString();
+  }
+
   static Future<Map<String, dynamic>?> post(
     String endpoint,
     Map<String, dynamic> data,
   ) async {
     try {
       final url = Uri.parse('$baseUrl$endpoint');
-      debugPrint('POST Request: $url - Body: ${jsonEncode(data)}');
+      debugPrint('POST Request: $url - Body: ${_sanitizeData(data)}');
 
       final response = await http.post(
         url,
@@ -21,7 +61,7 @@ class ApiService {
       );
 
       debugPrint('POST Response Status: ${response.statusCode}');
-      debugPrint('POST Response Body: ${response.body}');
+      debugPrint('POST Response Body: ${_sanitizeData(response.body)}');
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (response.body.isEmpty || response.body == 'null') return {};
@@ -32,7 +72,7 @@ class ApiService {
           return {};
         }
       } else {
-        debugPrint('POST Error: ${response.statusCode} - ${response.body}');
+        debugPrint('POST Error: ${response.statusCode} - ${_sanitizeData(response.body)}');
         return null;
       }
     } catch (e) {
@@ -116,7 +156,7 @@ class ApiService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        debugPrint('PUT Error: ${response.statusCode} - ${response.body}');
+        debugPrint('PUT Error: ${response.statusCode} - ${_sanitizeData(response.body)}');
         return null;
       }
     } catch (e) {
@@ -176,7 +216,7 @@ class ApiService {
       final response = await http.Response.fromStream(streamedResponse);
 
       debugPrint('POST Multipart Response Status: ${response.statusCode}');
-      debugPrint('POST Multipart Response Body: ${response.body}');
+      debugPrint('POST Multipart Response Body: ${_sanitizeData(response.body)}');
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return jsonDecode(response.body);
@@ -207,7 +247,7 @@ class ApiService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        debugPrint('PATCH Error: ${response.statusCode} - ${response.body}');
+        debugPrint('PATCH Error: ${response.statusCode} - ${_sanitizeData(response.body)}');
         return null;
       }
     } catch (e) {
@@ -222,7 +262,7 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return true;
       }
-      debugPrint('DELETE Error: ${response.statusCode} - ${response.body}');
+      debugPrint('DELETE Error: ${response.statusCode} - ${_sanitizeData(response.body)}');
       return false;
     } catch (e) {
       debugPrint('DELETE Exception: $e');
