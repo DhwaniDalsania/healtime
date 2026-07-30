@@ -73,11 +73,19 @@ class ApiService {
         }
       } else {
         debugPrint('POST Error: ${response.statusCode} - ${_sanitizeData(response.body)}');
-        return null;
+        
+        String errorMsg = 'Server Error: ${response.statusCode}';
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map && decoded.containsKey('message')) {
+            errorMsg = decoded['message'].toString();
+          }
+        } catch (_) {}
+        throw Exception(errorMsg);
       }
     } catch (e) {
       debugPrint('POST Exception: $e');
-      return null;
+      rethrow;
     }
   }
 
@@ -177,11 +185,16 @@ class ApiService {
     String receiverId,
     String content,
   ) async {
-    return await post('/messages', {
-      'senderId': senderId,
-      'receiverId': receiverId,
-      'content': content,
-    });
+    try {
+      return await post('/messages', {
+        'senderId': senderId,
+        'receiverId': receiverId,
+        'content': content,
+      });
+    } catch (e) {
+      debugPrint('SendMessage error: $e');
+      return null;
+    }
   }
 
   static Future<Map<String, dynamic>?> addRecordWithFile({

@@ -14,6 +14,7 @@ class AuthProvider extends ChangeNotifier {
   String? _userId;
   String? _token;
   User? _user;
+  String? _errorMessage;
 
   bool get isAuthenticated => _isAuthenticated;
   String? get userName => _userName;
@@ -21,6 +22,7 @@ class AuthProvider extends ChangeNotifier {
   String? get userId => _userId;
   String? get token => _token;
   User? get user => _user;
+  String? get errorMessage => _errorMessage;
 
   AuthProvider() {
     autoLogin();
@@ -46,6 +48,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> login(String email, String password) async {
+    _errorMessage = null;
     try {
       final response = await ApiService.post('/auth/login', {
         'email': email,
@@ -85,6 +88,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('Login error: $e');
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
       return false;
     }
   }
@@ -95,6 +99,7 @@ class AuthProvider extends ChangeNotifier {
     required String password,
     required String role,
   }) async {
+    _errorMessage = null;
     try {
       final response = await ApiService.post('/auth/register', {
         'name': name,
@@ -136,6 +141,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('Registration error: $e');
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
       return false;
     }
   }

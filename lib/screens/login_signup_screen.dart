@@ -266,7 +266,9 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            _isLoginMode ? 'Invalid credentials' : 'Registration failed',
+            _isLoginMode
+                ? (auth.errorMessage ?? 'Invalid credentials')
+                : (auth.errorMessage ?? 'Registration failed'),
           ),
         ),
       );
