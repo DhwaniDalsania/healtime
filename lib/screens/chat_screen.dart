@@ -7,6 +7,7 @@ import 'package:healtime_app/theme/app_theme.dart';
 import 'package:healtime_app/utils/api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:socket_io_client/socket_io_client.dart' as socket_io;
 
 class ChatScreen extends StatefulWidget {
   final String peerId;
@@ -24,24 +25,87 @@ class _ChatScreenState extends State<ChatScreen> {
 
   List<ChatMessage> _messages = [];
   bool _isLoading = true;
-  Timer? _pollingTimer;
+  socket_io.Socket? _socket;
 
   @override
   void initState() {
     super.initState();
     _fetchMessages();
-    // Poll every 5 seconds for new messages
-    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      _fetchMessages(isBackground: true);
-    });
+    _initSocket();
   }
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
+    if (_socket != null) {
+      final auth = context.read<AuthProvider>();
+      if (auth.userId != null) {
+        final roomId = [auth.userId!, widget.peerId]..sort();
+        final roomName = roomId.join('_');
+        _socket?.emit('leave_room', roomName);
+      }
+      _socket?.disconnect();
+      _socket?.dispose();
+    }
     _msgController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _initSocket() {
+    final auth = context.read<AuthProvider>();
+    if (auth.userId == null) return;
+
+    // Get the base server URL by removing the '/api' suffix
+    final serverUrl = ApiService.baseUrl.replaceAll('/api', '');
+
+    // Initialize Socket.io client
+    _socket = socket_io.io(serverUrl, socket_io.OptionBuilder()
+      .setTransports(['websocket'])
+      .enableAutoConnect()
+      .build());
+
+    // Join room on connection
+    _socket?.onConnect((_) {
+      debugPrint('Connected to Socket.io server');
+      final roomId = [auth.userId!, widget.peerId]..sort();
+      final roomName = roomId.join('_');
+      _socket?.emit('join_room', roomName);
+      debugPrint('Joined chat room: $roomName');
+    });
+
+    // Listen for new incoming messages
+    _socket?.on('receive_message', (data) {
+      debugPrint('Received message from socket: $data');
+      if (!mounted) return;
+
+      try {
+        final newMsg = ChatMessage.fromMap(data as Map<String, dynamic>);
+        
+        // Prevent duplicate messages if the message was already added via optimistic update
+        final exists = _messages.any((m) => m.id == newMsg.id);
+        if (!exists) {
+          setState(() {
+            // Remove the temporary message (with id starting with '20' which is DateTime.now().toString())
+            _messages.removeWhere((m) =>
+                m.senderId == newMsg.senderId &&
+                m.content == newMsg.content &&
+                m.id.startsWith('20'));
+            _messages.add(newMsg);
+          });
+          _scrollToBottom();
+        }
+      } catch (e) {
+        debugPrint('Error parsing socket message: $e');
+      }
+    });
+
+    _socket?.onDisconnect((_) {
+      debugPrint('Disconnected from Socket.io server');
+    });
+
+    _socket?.onConnectError((err) {
+      debugPrint('Socket.io Connect Error: $err');
+    });
   }
 
   Future<void> _fetchMessages({bool isBackground = false}) async {
@@ -107,7 +171,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
 
     await ApiService.sendMessage(auth.userId!, widget.peerId, text);
-    _fetchMessages(isBackground: true);
   }
 
   @override

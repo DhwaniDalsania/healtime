@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const User = require('./models/User');
 const Appointment = require('./models/Appointment');
@@ -27,12 +29,38 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// --- Socket.io Real-time Chat ---
+io.on('connection', (socket) => {
+    console.log(`User connected to Socket.io: ${socket.id}`);
+
+    socket.on('join_room', (roomId) => {
+        socket.join(roomId);
+        console.log(`Socket ${socket.id} joined room: ${roomId}`);
+    });
+
+    socket.on('leave_room', (roomId) => {
+        socket.leave(roomId);
+        console.log(`Socket ${socket.id} left room: ${roomId}`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log(`User disconnected: ${socket.id}`);
+    });
+});
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI)
@@ -325,6 +353,13 @@ app.post('/api/messages', async (req, res) => {
         const { senderId, receiverId, content } = req.body;
         const message = new Message({ senderId, receiverId, content });
         await message.save();
+
+        // Broadcast message to the chat room via Socket.io
+        // Sort IDs to match the room convention used by clients
+        const roomId = [senderId, receiverId].sort().join('_');
+        io.to(roomId).emit('receive_message', message.toJSON());
+        console.log(`Broadcasted message ${message._id} to room ${roomId}`);
+
         res.status(201).json(message);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -427,6 +462,6 @@ app.get('/api/seed', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
